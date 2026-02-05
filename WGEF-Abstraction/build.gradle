@@ -7,12 +7,10 @@ version "$parent.version"
 
 repositories {
     mavenCentral()
-    maven {
-        url 'https://repo.kryptonmc.org/releases'
-    }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     compileOnly 'net.essentialsx:EssentialsX:2.19.4'
-    compileOnly 'me.neznamy:tab-api:3.1.2'
+    compileOnly('com.github.NEZNAMY.TAB:tab-api:3.1.2') { transitive = false }
 }

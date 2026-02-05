@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'kr.entree.spigradle' version '2.2.4'
+    id 'com.gradleup.shadow' version '8.3.0'
+    id 'kr.entree.spigradle' version '2.4.2'
     id "net.kyori.indra.git" version "2.1.1"
 }
 
@@ -15,28 +15,46 @@ repositories {
     }
 }
 
+configurations {
+    embed
+}
+
 dependencies {
     compileOnly 'net.essentialsx:EssentialsX:2.19.4'
-    compileOnly 'me.clip:placeholderapi:2.11.2'
+    compileOnly 'me.clip:placeholderapi:2.11.6'
 
-    implementation "org.bstats:bstats-bukkit:3.0.0"
-    implementation project(":WGEF-Abstraction")
-    implementation project(":WG7")
+    compileOnly "org.bstats:bstats-bukkit:3.0.0"
+    embed "org.bstats:bstats-bukkit:3.0.0"
+
+    compileOnly project(":WGEF-Abstraction")
+    embed project(":WGEF-Abstraction")
+
+    compileOnly project(":WG7")
+    embed project(":WG7")
 }
 
 shadowJar {
+    configurations = [project.configurations.embed]
+    
     archiveBaseName.set('WGEF-REBORN')
     archiveClassifier.set('')
     archiveVersion.set('')
-
-    destinationDirectory = file(base118)
 
     exclude 'META-INF/**'
     exclude 'LICENSE'
 
     relocate 'org.bstats', 'io.github.invvk.wgef.metrics'
+}
 
-    finalizedBy('clean', ':WG7:clean', ':WGEF-Abstraction:clean')
+tasks.named("generateSpigotDescription") {
+    doLast {
+        def pluginYml = file("${buildDir}/resources/main/plugin.yml")
+        if (pluginYml.exists()) {
+            def lines = pluginYml.readLines()
+            def newLines = lines.findAll { !it.startsWith("libraries:") && !it.trim().startsWith("- io.github.invvk") && !it.trim().startsWith("- org.bstats") }
+            pluginYml.text = newLines.join("\n")
+        }
+    }
 }
 
 spigot {
@@ -48,4 +66,11 @@ spigot {
     depends 'WorldGuard'
     softDepends 'FastAsyncWorldEdit', 'Essentials', 'TAB'
     description 'Adds more flags to WorldGuard to help manage your server easily!'
+}
+
+afterEvaluate {
+    repositories.removeIf { it instanceof MavenArtifactRepository && it.url.toString().contains("papermc.io") }
+    tasks.named('detectSpigotMain').configure {
+        enabled = false
+    }
 }
