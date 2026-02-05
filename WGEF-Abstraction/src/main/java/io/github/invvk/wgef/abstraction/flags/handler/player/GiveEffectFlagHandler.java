@@ -10,7 +10,9 @@ import com.sk89q.worldguard.session.handler.Handler;
 import io.github.invvk.wgef.abstraction.WGEFUtils;
 import io.github.invvk.wgef.abstraction.flags.WGEFlags;
 import io.github.invvk.wgef.abstraction.flags.data.PotionEffectDetails;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -40,6 +42,11 @@ public class GiveEffectFlagHandler extends FlagValueChangeHandler<Set<PotionEffe
 
     @Override
     protected boolean onSetValue(LocalPlayer localPlayer, Location from, Location to, ApplicableRegionSet toSet, Set<PotionEffect> currentValue, Set<PotionEffect> lastValue, MoveType moveType) {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(this.getClass()), () -> onSetValue(localPlayer, from, to, toSet, currentValue, lastValue, moveType));
+            return true;
+        }
+
         final Player player = WGEFUtils.wrapPlayer(localPlayer);
         this.give_potions = WGEFUtils.queryValue(player, player.getWorld(), toSet.getRegions(), WGEFlags.GIVE_EFFECTS);
         if (!player.getActivePotionEffects().isEmpty()) {
@@ -62,6 +69,11 @@ public class GiveEffectFlagHandler extends FlagValueChangeHandler<Set<PotionEffe
 
     @Override
     protected boolean onAbsentValue(LocalPlayer localPlayer, Location from, Location to, ApplicableRegionSet toSet, Set<PotionEffect> lastValue, MoveType moveType) {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(this.getClass()), () -> onAbsentValue(localPlayer, from, to, toSet, lastValue, moveType));
+            return true;
+        }
+
         final Player player = WGEFUtils.wrapPlayer(localPlayer);
         if (!player.getActivePotionEffects().isEmpty()) {
             if (this.give_potions != null && !this.give_potions.isEmpty()) {
@@ -78,6 +90,11 @@ public class GiveEffectFlagHandler extends FlagValueChangeHandler<Set<PotionEffe
 
     @Override
     public void tick(LocalPlayer localPlayer, ApplicableRegionSet set) {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(this.getClass()), () -> tick(localPlayer, set));
+            return;
+        }
+
         final Player player = WGEFUtils.wrapPlayer(localPlayer);
         this.give_potions = WGEFUtils.queryValue(player, player.getWorld(), set.getRegions(), WGEFlags.GIVE_EFFECTS);
         this.handleValue(player, this.give_potions);
